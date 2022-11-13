@@ -30,5 +30,9 @@ EXT:
 RET
 calculatePixels ENDP
 
+doNothing PROC
+RET
+doNothing ENDP
+
 END
 ;-------------------------------------------------------------------------
