@@ -30,6 +30,6 @@ struct BMP {
 
 bool LoadBitmapFile(char* const&, BMP&);
 
-void UpdateBitmapFile(BMP&);
+void ExportBitmapWithAppliedChanges(BMP&, char* const&);
 
 void printBMP(const BMP&, bool = false);

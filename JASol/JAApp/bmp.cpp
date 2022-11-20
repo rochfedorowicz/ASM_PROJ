@@ -37,18 +37,17 @@ bool LoadBitmapFile(char* const& _filename, BMP& _bmpVar) {
     return true;
 }
 
-void UpdateBitmapFile(BMP& _bmpVar) {
-    FILE* filePtr = fopen(_bmpVar.fileName, "r+b");
+void ExportBitmapWithAppliedChanges(BMP& _bmpVar, char* const& _newFilename) {
+    FILE* filePtr = fopen(_newFilename, "wb");
 
-    if (filePtr == NULL) {
-        LOGINFO("Unable to open a file named %s!!!", _bmpVar.fileName);
-        return;
-    }
-
+    fwrite(&_bmpVar.bmpInfo, sizeof(BMPINFO), 1, filePtr);
     fseek(filePtr, _bmpVar.bmpInfo.dataOffsetInBytes, SEEK_SET);
-    fwrite(_bmpVar.copyOfBytes, sizeof(BYTE), _bmpVar.bmpInfo.sizeBytesOfRawData, filePtr);
+    fwrite(_bmpVar.copyOfBytes,
+        sizeof(BYTE),
+        _bmpVar.bmpInfo.sizeBytesOfRawData,
+        filePtr);
 
-    LOGINFO("Bitmap successfully updated!!!");
+    LOGINFO("Bitmap exported successfully!!!");
     fclose(filePtr);
 }
 

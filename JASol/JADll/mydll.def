@@ -2,4 +2,5 @@
 LIBRARY JADll
 EXPORTS calculatePixels
 EXPORTS doNothing
+EXPORTS test1
 ;-------------------------------------------------------------------------
