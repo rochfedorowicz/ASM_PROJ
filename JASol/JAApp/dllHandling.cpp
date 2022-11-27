@@ -6,7 +6,7 @@ bool freeDLL(HINSTANCE& _hinstLib) {
         return true;
     }
     else {
-        LOGINFO("Failed to free library!");
+        LOGINFO("Failed to free library! Error Code: %d", GetLastError());
         return false;
     }
 }

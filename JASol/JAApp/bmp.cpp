@@ -42,10 +42,7 @@ void ExportBitmapWithAppliedChanges(BMP& _bmpVar, char* const& _newFilename) {
 
     fwrite(&_bmpVar.bmpInfo, sizeof(BMPINFO), 1, filePtr);
     fseek(filePtr, _bmpVar.bmpInfo.dataOffsetInBytes, SEEK_SET);
-    fwrite(_bmpVar.copyOfBytes,
-        sizeof(BYTE),
-        _bmpVar.bmpInfo.sizeBytesOfRawData,
-        filePtr);
+    fwrite(_bmpVar.copyOfBytes, sizeof(BYTE), _bmpVar.bmpInfo.sizeBytesOfRawData, filePtr);
 
     LOGINFO("Bitmap exported successfully!!!");
     fclose(filePtr);

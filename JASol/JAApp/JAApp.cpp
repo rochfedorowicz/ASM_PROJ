@@ -1,41 +1,37 @@
 ﻿#include <stdio.h> 
 #include <functional>
-#include <chrono>
 
 #include "bmp.h"
 #include "dllHandling.h"
 
 typedef void(__cdecl* BITMAP_CHANGE_FN_TYPE)(BYTE*, DWORD, DWORD, BYTE*);
-typedef int(__cdecl* TEST_FN_TYPE)(void);
 
 int main() {
     HINSTANCE hinstLibC, hinstLibASM;
     BITMAP_CHANGE_FN_TYPE procAddC = NULL, procAddASM = NULL;
-    //TEST_FN_TYPE procAddASM;
-
-    loadDLLFunction(hinstLibASM, L"JADll.dll", procAddASM, "calculatePixels");
     loadDLLFunction(hinstLibC, L"CDll.dll", procAddC, "calculatePixels");
+    loadDLLFunction(hinstLibASM, L"JADll.dll", procAddASM, "calculatePixels");
 
-    char name[] = "image4.bmp";
+    char name[] = "image2.bmp";
     char outputName[] = "imageOutput.bmp";
     BMP newBMPFile;
 
     LoadBitmapFile(name, newBMPFile);
     NEWLINE();
+    printBMP(newBMPFile, false);
 
     BYTE* outputBytes = (BYTE*)malloc(newBMPFile.bmpInfo.sizeBytesOfRawData * sizeof(BYTE));
-    procAddASM(newBMPFile.copyOfBytes, newBMPFile.bmpInfo.heightBytes, newBMPFile.bmpInfo.sizeBytesOfRawData / newBMPFile.bmpInfo.heightBytes , outputBytes);
+    if (outputBytes != 0)
+        memcpy(outputBytes, newBMPFile.copyOfBytes, newBMPFile.bmpInfo.sizeBytesOfRawData * sizeof(BYTE));
+    procAddASM(newBMPFile.copyOfBytes, newBMPFile.bmpInfo.heightBytes, newBMPFile.bmpInfo.sizeBytesOfRawData / newBMPFile.bmpInfo.heightBytes, outputBytes);
     newBMPFile.copyOfBytes = outputBytes;
 
     ExportBitmapWithAppliedChanges(newBMPFile, outputName);
     NEWLINE();
-    //procAddASM();
-    //procAddASM(newBMPFile.copyOfBytes, 1, newBMPFile.bmpInfo.sizeBytesOfRawData);
-    //printf("==================AfterASMProcedure==================\n");
-    //printBMP(newBMPFile, true);
-    //NEWLINE();
+    printBMP(newBMPFile, false);
 
-    freeDLL(hinstLibASM);
     freeDLL(hinstLibC);
+    freeDLL(hinstLibASM);
+
     return 0;
 }
