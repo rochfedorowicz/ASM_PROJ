@@ -1,0 +1,1 @@
+typedef void(__cdecl* BITMAP_CHANGE_FN_TYPE)(BYTE*, DWORD, DWORD, BYTE*);
