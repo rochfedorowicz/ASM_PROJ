@@ -5,7 +5,7 @@
 #include "bmp.h"
 #include "macros.h"
 
-bool LoadBitmapFile(char* const& _filename, BMP& _bmpVar) {
+bool LoadBitmapFile(char* const _filename, BMP& _bmpVar) {
     _bmpVar.fileName = _filename;
 
     FILE* filePtr = fopen(_filename, "rb");

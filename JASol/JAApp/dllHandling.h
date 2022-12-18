@@ -9,7 +9,9 @@
 #include "macros.h"
 #include "functionTypes.h"
 
-bool loadDLLFunction(HINSTANCE&, const LPCWSTR&, BITMAP_CHANGE_FN_TYPE&, const LPCSTR&);
+bool loadDLL(HINSTANCE&, const LPCWSTR&);
+
+bool loadDLLFunction(HINSTANCE&, BITMAP_CHANGE_FN_TYPE&, const LPCSTR&);
 
 bool freeDLL(HINSTANCE&);
 

@@ -28,7 +28,7 @@ struct BMP {
     BYTE* copyOfBytes;
 };
 
-bool LoadBitmapFile(char* const&, BMP&);
+bool LoadBitmapFile(char* const, BMP&);
 
 void ExportBitmapWithAppliedChanges(BMP&, char* const&);
 

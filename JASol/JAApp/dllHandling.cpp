@@ -1,9 +1,18 @@
 #include "dllHandling.h"
 
-bool loadDLLFunction(HINSTANCE& _hinstLib, const LPCWSTR& _libName, BITMAP_CHANGE_FN_TYPE& _procAddress, const LPCSTR& _funName) {
+bool loadDLL(HINSTANCE& _hinstLib, const LPCWSTR& _libName) {
     _hinstLib = LoadLibrary(_libName);
     if (_hinstLib != NULL) {
         LOGINFO("DLL named %ws loaded successfuly!", _libName);
+    }
+    else {
+        LOGINFO("DLL named %ws failed to load!", _libName);
+    }
+    return false;
+}
+
+bool loadDLLFunction(HINSTANCE& _hinstLib, BITMAP_CHANGE_FN_TYPE& _procAddress, const LPCSTR& _funName) {
+    if (_hinstLib != NULL) {
         _procAddress = (BITMAP_CHANGE_FN_TYPE)GetProcAddress(_hinstLib, _funName);
         if (NULL != _procAddress) {
             LOGINFO("Function named %s found!", _funName);
@@ -14,7 +23,7 @@ bool loadDLLFunction(HINSTANCE& _hinstLib, const LPCWSTR& _libName, BITMAP_CHANG
         }
     }
     else {
-        LOGINFO("DLL named %ws failed to load!", _libName);
+        LOGINFO("Used DLL does not seem to be loaded yet!");
     }
     return false;
 }
@@ -38,10 +47,10 @@ void instantiateThreads(size_t _numberOfThreads, BITMAP_CHANGE_FN_TYPE& _functio
     size_t spareLines = _height % _numberOfThreads;
     size_t realLinesPerThread = 0;
     for (int i = 0, j = 0; i < _numberOfThreads; ++i, ++j) {
-        _inputByteData += realLinesPerThread * _width;
-        _outputByteData += realLinesPerThread * _width;
+        _inputByteData += /*i != 0 ? (realLinesPerThread - 1) * _width :*/ realLinesPerThread * _width;
+        _outputByteData += /*i != 0 ? (realLinesPerThread - 1) * _width : */ realLinesPerThread * _width;
         realLinesPerThread = j < spareLines ? expectedLinesPerThread + 1 : expectedLinesPerThread;
-        threads.push_back(std::thread(_functionPointer, _inputByteData, realLinesPerThread, _width, _outputByteData));
+        threads.push_back(std::thread(_functionPointer, _inputByteData, /*_numberOfThreads > 1 ? realLinesPerThread + 2 :*/ realLinesPerThread, _width, _outputByteData));
     }
     for (auto& t : threads) t.join();
 }
