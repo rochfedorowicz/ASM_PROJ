@@ -5,6 +5,8 @@
 W DQ ?		
 EN_J DQ ?
 EN_C DQ 3
+DIV_9 DQ 2097865012304223517
+SHFT DQ 8
 ;====================================================================================================================================================================
 ;====================================================================================================================================================================
 .CODE
@@ -255,44 +257,25 @@ PUSH R15						;save current R15 value
 MOV W, R8						;W = WIDTH
 MOV	R13, RCX					;R13 = INPT_DATA_PTR
 SUB	RDX, 1						;RDX = HEIGHT - 1 = END_I
-SUB R8, 1						;R8 = WIDTH - 1
-MOV RAX, R8						;RAX = WIDTH - 1
 MOV R8, RDX						;EN_I = END_I
-XOR RBX, RBX					;clearing RBX
-XOR RCX, RCX					;clearing RCX
-XOR RDX, RDX					;clearing RDX
-MOV R15, 3						;R15 = 3
-DIV R15							;RAX = RAX / 3 = (WIDTH - 1) / 3
-SUB RAX, 1						;RAX = RAX / 3 - 1 = (WIDTH - 1) / 3 - 1 = END_J
-XOR R15, R15					;clearing R15
-XOR RDX, RDX					;clearing RDX
+MOV RAX, W						;RAX = WIDTH
+SUB RAX, 1						;RAX = WIDTH - 1
+SHR RAX, 3						;RAX = (WIDTH - 1) / 8 = END_J
 MOV	EN_J, RAX					;EN_J = END_J
-XOR R10, R10					;clearing R10
 MOV R10, 1						;R10 = I
-XOR R11, R11					;clearing R11
 MOV R11, 1						;R11 = J
-XOR R12, R12					;clearing R12
-MOV R12, 0						;R12 = CHANNEL_NR
 ;====================================================================================================================================================================
-XOR RAX, RAX					;clearing RAX
-MOV AL,  1						;storing 1 as least significant byte in RAX
-PINSRQ XMM0, RAX, 1				;setting 8 upper bytes of XMM1 with value of RAX
-MOV AL,  1						;storing 1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL,  1						;storing 1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL,  1						;storing 1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL, -2						;storing -2 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL, 1						;storing 1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL, -1						;storing -1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL, -1						;storing -1 as least significant byte in RAX
-SHL	RAX, 8						;shiftting RAX 1 byte to left
-MOV AL, -1						;storing -1 as least significant byte in RAX
-PINSRQ XMM0, RAX, 0				;setting 8 lower bytes of XMM1 with value of RAX
+MOV RCX, W						;RCX = WIDTH
+LEA RAX, [R10 - 1]				;RAX = I - 1												
+MUL RCX							;RAX = (I - 1) * WIDTH											
+LEA R14, [R11 - 1]				;R14 = J - 1													
+LEA	R14, [2 * R14 + R14]		;R14 = (J - 1) * 3												
+ADD R14, R12					;R14 = (J - 1) * 3 + CHANNEL_NR									
+ADD RAX, R14					;RAX = (I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR
+;====================================================================================================================================================================
+MOVQ XMM10, DIV_9
+PUNPCKLBW XMM10, XMM0
+MOVQ XMM11, SHFT
 ;====================================================================================================================================================================
 BEG_LOOP_1:						;begining of LOOP_1
 CMP R10, R8						;comparing I and END_I
@@ -300,89 +283,70 @@ JE EXT							;jumping exit if equal
 BEG_LOOP_2:						;begining of LOOP_2
 CMP R11, EN_J					;comparing J and END_J
 JE END_LOOP_2					;jumping LOOP_2 ending if equal
-BEG_LOOP_3:						;begining of LOOP_3
-CMP R12, EN_C					;comparing CHANNEL and END_C
-JE END_LOOP_3					;jumping LOOP_3 ending if equal
+;====================================================================================================================================================================
+PXOR XMM0, XMM0
+MOVQ XMM1, QWORD PTR [R13 + RAX]	
+PUNPCKLBW XMM1, XMM0				
 ;====================================================================================================================================================================	
-XOR R15, R15					;clearing R15
-MOV RCX, W						;RCX = WIDTH
-LEA RAX, [R10 - 1]				;RAX = I - 1												
-MUL RCX							;RAX = (I - 1) * WIDTH											
-LEA R14, [R11 - 1]				;R14 = J - 1													
-LEA	R14, [2 * R14 + R14]		;R14 = (J - 1) * 3												
-ADD R14, R12					;R14 = (J - 1) * 3 + CHANNEL_NR									
-ADD RAX, R14					;RAX = (I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR																							
-MOV R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR]
-PINSRQ XMM1, R15, 1				;setting 8 upper bytes of XMM1 with value of R15
+ADD RAX, 3						
+MOVQ XMM2, QWORD PTR [R13 + RAX]	
+PUNPCKLBW XMM2, XMM0														
 ;====================================================================================================================================================================
-ADD RAX, 3						;RAX = (I - 1) * WIDTH + J * 3 + CHANNEL_NR
-MOV R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I - 1) * WIDTH + J * 3 + CHANNEL_NR]			
-SHL	R15, 8						;shiftting R15 1 byte to left																
+ADD RAX, 3						
+MOVQ XMM3, QWORD PTR [R13 + RAX]	
+PUNPCKLBW XMM3, XMM0												
 ;====================================================================================================================================================================
-ADD RAX, 3						;RAX = (I - 1) * WIDTH + (J + 1) * 3 + CHANNEL_NR					
-MOV R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I - 1) * WIDTH + (J + 1) * 3 + CHANNEL_NR]	
-SHL	R15, 8						;shiftting R15 1 byte to left														
-;====================================================================================================================================================================
-LEA RAX, [RAX + RCX - 6]		;RAX = I * WIDTH + (J - 1) * 3 + CHANNEL_NR					
-MOV R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[I * WIDTH + (J - 1) * 3 + CHANNEL_NR]			
-SHL	R15, 8						;shiftting R15 1 byte to left												
+LEA RAX, [RAX + RCX - 6]		
+MOVQ XMM4, QWORD PTR [R13 + RAX]	
+PUNPCKLBW XMM4, XMM0	
 ;====================================================================================================================================================================								____
-ADD RAX, 3						;RAX = I * WIDTH + J * 3 + CHANNEL_NR
-MOV	R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[I * WIDTH + J * 3 + CHANNEL_NR]				
-SHL	R15, 8						;shiftting R15 1 byte to left													
+ADD RAX, 3
+MOVQ XMM5, QWORD PTR [R13 + RAX]			
+PUNPCKLBW XMM5, XMM0		
 ;====================================================================================================================================================================
-ADD RAX, 3						;RAX = I * WIDTH + (J + 1) * 3 + CHANNEL_NR	
-MOV R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[I * WIDTH + (J + 1) * 3 + CHANNEL_NR]			
-SHL	R15, 8						;shiftting R15 1 byte to left													
+ADD RAX, 3						
+MOVQ XMM6, QWORD PTR [R13 + RAX]
+PUNPCKLBW XMM6, XMM0												
 ;====================================================================================================================================================================		
-LEA RAX, [RAX + RCX - 6]		;RAX = (I + 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR
-MOV	R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I + 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR]	
-SHL	R15, 8						;shiftting R15 1 byte to left													
+LEA RAX, [RAX + RCX - 6]
+MOVQ XMM7, QWORD PTR [R13 + RAX]			
+PUNPCKLBW XMM7, XMM0	
 ;====================================================================================================================================================================
-ADD RAX, 3						;RAX = (I + 1) * WIDTH + J * 3 + CHANNEL_NR
-MOV	R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I + 1) * WIDTH + J * 3 + CHANNEL_NR]			
-SHL	R15, 8						;shiftting R15 1 byte to left													
+ADD RAX, 3
+MOVQ XMM8, QWORD PTR [R13 + RAX]			
+PUNPCKLBW XMM8, XMM0	
 ;====================================================================================================================================================================
-ADD RAX, 3						;RAX = (I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_N
-MOV	R15B, BYTE PTR [R13 + RAX]	;R15B = INPT_DATA_PTR[(I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_NR]	
-PINSRQ XMM1, R15, 0				;setting 8 lower bytes of XMM1 with value of R15												
+ADD RAX, 3
+MOVQ XMM9, QWORD PTR [R13 + RAX]			
+PUNPCKLBW XMM9, XMM0	
 ;====================================================================================================================================================================
-PMADDUBSW XMM1, XMM0			;Multiplying mask in XMM0 by pixel values in XMM1 and then summing every pair of words
-XORPS XMM2, XMM2				;clearing XMM2
-PHADDSW XMM1, XMM2				;summing every pair of words in XMM1 and XMM2
-PHADDSW XMM1, XMM2				;summing every pair of words in XMM1 and XMM2
-PHADDSW XMM1, XMM2				;summing every pair of words in XMM1 and XMM2
-MOVQ R15, XMM1					;R15 = XMM1L
-CMP R15W, 0						;comparing R15W to 0											
-JNS SKIP_FOR_POS				;skipping for positive												
-MOV R15W, 0						;R15W = 0, when it is negative										
-JMP SKIP_FOR_NEG				;skipping for negative
-SKIP_FOR_POS:					;skipped for positive
-MOV RDX, RAX					;RDX = (I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_N
-XOR RAX, RAX					;clearing RAX														
-MOV AX, R15W					;AX = R15W = SUM
-MOV R15, RDX					;R15 = (I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_N
-XOR RBX, RBX					;clearing RBX	
-XOR RCX, RCX					;clearing RCX
-XOR RDX, RDX					;clearing RDX														
-MOV BX, 9						;BX = 9																
-DIV BX							;AX = AX / 9 = SUM / 9
-MOV RDX, R15					;RDX = (I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_N
-XOR R15, R15					;clearing R15														
-MOV R15B, AL					;R15B = AL = SUM / 9
-MOV RAX, RDX					;RAX = (I + 1) * WIDTH + (J + 1) * 3 + CHANNEL_N
-SKIP_FOR_NEG:					;skipped for negative														
-SUB RAX, W						;RAX = I + (J + 1) * 3 + CHANNEL_NR
-SUB RAX, 3						;RAX = I + J * 3 + CHANNEL_NR
-MOV BYTE PTR[R9 + RAX], R15B	;OTPT_DATA_PTR[I + J * 3 + CHANNEL_NR] = R15B				
+PADDUSW XMM1, XMM2
+PADDUSW XMM1, XMM3
+PADDUSW XMM1, XMM4
+PADDUSW XMM1, XMM6
+PSUBUSW XMM1, XMM5
+PSUBUSW XMM1, XMM5
+PSUBUSW XMM1, XMM7
+PSUBUSW XMM1, XMM8
+PSUBUSW XMM1, XMM9
 ;====================================================================================================================================================================
-INC R12							;++CHANNEL
-JMP BEG_LOOP_3					;jumping to begining of LOOP_3
-END_LOOP_3:						;ending LOOP_3
+PMULLW XMM1, XMM10
+PSRAW XMM1, XMM11
+PACKUSWB XMM1, XMM0
+SUB RAX, W						;RAX = I * WIDTH + (J + 1) * 3 + CHANNEL_NR
+SUB RAX, 3						;RAX = I * WIDTH + J * 3 + CHANNEL_NR
+MOVQ QWORD PTR[R9 + RAX], XMM1	;OTPT_DATA_PTR[I * WIDTH + J * 3 + CHANNEL_NR] = R15B				
+;====================================================================================================================================================================
+SUB RAX, W						;RAX = (I - 1) * WIDTH + J * 3 + CHANNEL_NR
+ADD RAX, 5						;RAX = (I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR_NEXT
 INC R11							;++J
-MOV R12, 0						;R12 = CHANNEL_NR = 0
 JMP BEG_LOOP_2					;jumping to begining of LOOP_2
 END_LOOP_2:						;ending LOOP_2
+MOV RBX, EN_J
+SHL RBX, 3
+SUB RAX, RBX
+ADD RAX, W
+ADD RAX, 8
 INC R10							;++I
 MOV R11, 1						;R11 = J = 1
 JMP BEG_LOOP_1					;jumping to begining of LOOP_1
