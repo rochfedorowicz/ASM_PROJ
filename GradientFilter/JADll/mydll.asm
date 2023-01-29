@@ -2,16 +2,17 @@
 ;====================================================================================================================================================================
 ;====================================================================================================================================================================
 .DATA
-W DQ ?		
-EN_J DQ ?
-EN_C DQ 3
-DIV_9 DQ 2097865012304223517
-SHFT DQ 8
+W DQ ?							;memory reserved to store value of width, used by ineffective procedure
+EN_C DQ 3						;value needed to check the stop condition for channel loop, used by ineffective procedure 
+EN_J DQ ?						;memory reserved to store end J loop value, used by ineffective procedure
+DIV_9 DQ 2097865012304223517	;value needed to multiply packed words being 8 bytes packed into qword, each with value 29, used by effective procedure
+SHFT DQ 8						;value needed to shift packed words, used by effective procedure
 ;====================================================================================================================================================================
 ;====================================================================================================================================================================
 .CODE
 
-calculatePixels PROC			;(RCX)BYTE* - INPT_DATA_PTR, (RDX)DWORD - HEIGHT, (R8)DWROD -WIDTH, (R9)BYTE* - OTPT_DATA_PTR
+;Ineffective procedure
+calculatePixels PROC			;(RCX)BYTE* - INPT_DATA_PTR, (RDX)DWORD - HEIGHT, (R8)DWROD - WIDTH, (R9)BYTE* - OTPT_DATA_PTR
 PUSH RAX						;save current RAX value
 PUSH RBX						;save current RBX value
 PUSH RCX						;save current RCX value
@@ -80,7 +81,7 @@ LEA R14, [2 * R14 + R14]		;R14 = J * 3														\
 ADD R14, R12					;R14 = J * 3 + CHANNEL_NR											}---> sum += _inputByteData[(i - 1) * _width + j * 3 + channel];
 ADD RAX, R14					;RAX = (I - 1) * WIDTH + J * 3 + CHANNEL_NR							|
 MOV RBX, R13					;RBX = INPT_DATA_PTR												|
-XOR R14, r14					;clearing R14														|
+XOR R14, R14					;clearing R14														|
 MOV R14B, BYTE PTR [RBX + RAX]	;R14B = INPT_DATA_PTR[(I - 1) * WIDTH + J * 3 + CHANNEL_NR]			|
 ADD R15W, R14W					;R15W += R14W													----|
 ;====================================================================================================================================================================
@@ -108,7 +109,7 @@ MOV RBX, R13					;RBX = INPT_DATA_PTR												|
 XOR R14, R14					;clearing R14														|
 MOV R14B, BYTE PTR [RBX + RAX]	;R14B = INPT_DATA_PTR[I * WIDTH + (J - 1) * 3 + CHANNEL_NR]			|
 ADD R15W, R14W					;R15W += R14W													----|
-;====================================================================================================================================================================								____
+;====================================================================================================================================================================
 MOV RAX, R10					;RAX = I														----\
 MUL W							;RAX = I * WIDTH													\
 MOV R14, R11					;R14 = J															\
@@ -233,140 +234,126 @@ POP RDX							;restore current RDX value
 POP RCX							;restore current RCX value
 POP RBX							;restore current RBX value
 POP RAX							;restore current RAX value
-RET
+RET								;return
 calculatePixels ENDP
 ;====================================================================================================================================================================
 ;====================================================================================================================================================================
-calculatePixelsWithVI PROC		;(RCX)BYTE* - INPT_DATA_PTR, (RDX)DWORD - HEIGHT, (R8)DWROD -WIDTH, (R9)BYTE* - OTPT_DATA_PTR
-PUSH RAX						;save current RAX value
-PUSH RBX						;save current RBX value
-PUSH RCX						;save current RCX value
-PUSH RDX						;save current RDX value
-PUSH RBP						;save current RBP value
-PUSH RDI						;save current RDI value
-PUSH RSI						;save current RSI value
-PUSH R8							;save current R8 value
-PUSH R9							;save current R9 value
-PUSH R10						;save current R10 value
-PUSH R11						;save current R11 value
-PUSH R12						;save current R12 value
-PUSH R13						;save current R13 value
-PUSH R14						;save current R14 value
-PUSH R15						;save current R15 value
+
+;Effective procedure
+calculatePixelsWithVI PROC				;(RCX)BYTE* - INPT_DATA_PTR, (RDX)DWORD - HEIGHT, (R8)DWROD -WIDTH, (R9)BYTE* - OTPT_DATA_PTR
+PUSH RAX								;save current RAX value
+PUSH RBX								;save current RBX value
+PUSH RCX								;save current RCX value
+PUSH RDX								;save current RDX value
+PUSH RBP								;save current RBP value
+PUSH RDI								;save current RDI value
+PUSH RSI								;save current RSI value
+PUSH R8									;save current R8 value
+PUSH R9									;save current R9 value
+PUSH R10								;save current R10 value
+PUSH R11								;save current R11 value
+PUSH R12								;save current R12 value
+PUSH R13								;save current R13 value
+PUSH R14								;save current R14 value
+PUSH R15								;save current R15 value
 ;====================================================================================================================================================================
-MOV W, R8						;W = WIDTH
-MOV	R13, RCX					;R13 = INPT_DATA_PTR
-SUB	RDX, 1						;RDX = HEIGHT - 1 = END_I
-MOV R8, RDX						;EN_I = END_I
-MOV RAX, W						;RAX = WIDTH
-SUB RAX, 1						;RAX = WIDTH - 1
-SHR RAX, 3						;RAX = (WIDTH - 1) / 8 = END_J
-MOV	EN_J, RAX					;EN_J = END_J
-MOV R10, 1						;R10 = I
-MOV R11, 1						;R11 = J
+MOV	R13, RCX							;R13 = INPT_DATA_PTR
+MOV RCX, R8								;RCX = WIDTH
+SUB	RDX, 1								;RDX = HEIGHT - 1 = END_I
+MOV R8, RDX								;EN_I = END_I
+MOV R12, RCX							;R12 = WIDTH
+SUB R12, 1								;R12 = WIDTH - 1
+SHR R12, 3								;R12 = (WIDTH - 1) / 8 = END_J
+MOV R10, 1								;R10 = I
+MOV R11, 1								;R11 = J
+XOR RAX, RAX							;RAX = 0
 ;====================================================================================================================================================================
-MOV RCX, W						;RCX = WIDTH
-LEA RAX, [R10 - 1]				;RAX = I - 1												
-MUL RCX							;RAX = (I - 1) * WIDTH											
-LEA R14, [R11 - 1]				;R14 = J - 1													
-LEA	R14, [2 * R14 + R14]		;R14 = (J - 1) * 3												
-ADD R14, R12					;R14 = (J - 1) * 3 + CHANNEL_NR									
-ADD RAX, R14					;RAX = (I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR
+MOVQ XMM10, DIV_9						;moving packed bytes of value 29 to lower part of XMM10
+PUNPCKLBW XMM10, XMM0					;unpacking bytes from lower part of XMM10 to unsigned words
+MOVQ XMM11, SHFT						;moving shift value (equal to 8) needed for packed shifting
 ;====================================================================================================================================================================
-MOVQ XMM10, DIV_9
-PUNPCKLBW XMM10, XMM0
-MOVQ XMM11, SHFT
+BEG_LOOP_1:								;begining of LOOP_1
+CMP R10, R8								;comparing I and END_I
+JE EXT									;jumping exit if equal
+BEG_LOOP_2:								;begining of LOOP_2
+CMP R11, R12							;comparing J and END_J
+JE END_LOOP_2							;jumping LOOP_2 ending if equal
 ;====================================================================================================================================================================
-BEG_LOOP_1:						;begining of LOOP_1
-CMP R10, R8						;comparing I and END_I
-JE EXT							;jumping exit if equal
-BEG_LOOP_2:						;begining of LOOP_2
-CMP R11, EN_J					;comparing J and END_J
-JE END_LOOP_2					;jumping LOOP_2 ending if equal
+PXOR XMM0, XMM0							;clearing XMM0
+MOVQ XMM1, QWORD PTR [R13 + RAX]		;moving first byte in fisrt row and 7 next bytes into XMM1
+PUNPCKLBW XMM1, XMM0					;unpacking bytes to unsigned words
+;====================================================================================================================================================================					
+MOVQ XMM2, QWORD PTR [R13 + RAX + 3]	;moving second byte in fisrt row and 7 next bytes into XMM2
+PUNPCKLBW XMM2, XMM0					;unpacking bytes to unsigned words								
+;====================================================================================================================================================================						
+MOVQ XMM3, QWORD PTR [R13 + RAX + 6]	;moving third byte in fisrt row and 7 next bytes into XMM3
+PUNPCKLBW XMM3, XMM0					;unpacking bytes to unsigned words						
 ;====================================================================================================================================================================
-PXOR XMM0, XMM0
-MOVQ XMM1, QWORD PTR [R13 + RAX]	
-PUNPCKLBW XMM1, XMM0				
-;====================================================================================================================================================================	
-ADD RAX, 3						
-MOVQ XMM2, QWORD PTR [R13 + RAX]	
-PUNPCKLBW XMM2, XMM0														
+ADD RAX, RCX							;changing address to next row
+MOVQ XMM4, QWORD PTR [R13 + RAX]		;moving first byte in second row and 7 next bytes into XMM4
+PUNPCKLBW XMM4, XMM0					;unpacking bytes to unsigned words
 ;====================================================================================================================================================================
-ADD RAX, 3						
-MOVQ XMM3, QWORD PTR [R13 + RAX]	
-PUNPCKLBW XMM3, XMM0												
-;====================================================================================================================================================================
-LEA RAX, [RAX + RCX - 6]		
-MOVQ XMM4, QWORD PTR [R13 + RAX]	
-PUNPCKLBW XMM4, XMM0	
-;====================================================================================================================================================================								____
-ADD RAX, 3
-MOVQ XMM5, QWORD PTR [R13 + RAX]			
-PUNPCKLBW XMM5, XMM0		
-;====================================================================================================================================================================
-ADD RAX, 3						
-MOVQ XMM6, QWORD PTR [R13 + RAX]
-PUNPCKLBW XMM6, XMM0												
+MOVQ XMM5, QWORD PTR [R13 + RAX + 3]	;moving second byte in second row and 7 next bytes into XMM5		
+PUNPCKLBW XMM5, XMM0					;unpacking bytes to unsigned words
+;====================================================================================================================================================================				
+MOVQ XMM6, QWORD PTR [R13 + RAX + 6]	;moving third byte in second row and 7 next bytes into XMM6
+PUNPCKLBW XMM6, XMM0					;unpacking bytes to unsigned words								
 ;====================================================================================================================================================================		
-LEA RAX, [RAX + RCX - 6]
-MOVQ XMM7, QWORD PTR [R13 + RAX]			
-PUNPCKLBW XMM7, XMM0	
+ADD RAX, RCX							;changing address to next row
+MOVQ XMM7, QWORD PTR [R13 + RAX]		;moving first byte in third row and 7 next bytes into XMM7	
+PUNPCKLBW XMM7, XMM0					;unpacking bytes to unsigned words
 ;====================================================================================================================================================================
-ADD RAX, 3
-MOVQ XMM8, QWORD PTR [R13 + RAX]			
-PUNPCKLBW XMM8, XMM0	
+MOVQ XMM8, QWORD PTR [R13 + RAX + 3]	;moving second byte in third row and 7 next bytes into XMM8		
+PUNPCKLBW XMM8, XMM0					;unpacking bytes to unsigned words
 ;====================================================================================================================================================================
-ADD RAX, 3
-MOVQ XMM9, QWORD PTR [R13 + RAX]			
-PUNPCKLBW XMM9, XMM0	
+MOVQ XMM9, QWORD PTR [R13 + RAX + 6]	;moving third byte in third row and 7 next bytes into XMM9		
+PUNPCKLBW XMM9, XMM0					;unpacking bytes to unsigned words
 ;====================================================================================================================================================================
-PADDUSW XMM1, XMM2
-PADDUSW XMM1, XMM3
-PADDUSW XMM1, XMM4
-PADDUSW XMM1, XMM6
-PSUBUSW XMM1, XMM5
-PSUBUSW XMM1, XMM5
-PSUBUSW XMM1, XMM7
-PSUBUSW XMM1, XMM8
-PSUBUSW XMM1, XMM9
+PADDUSW XMM1, XMM2						;adding first bytes in first row to second bytes in first row, result in XMM1
+PADDUSW XMM1, XMM3						;adding to that third bytes in first row, result in XMM1
+PADDUSW XMM1, XMM4						;adding to that first bytes in second row, result in XMM1
+PADDUSW XMM1, XMM6						;adding to that third bytes in second row, result in XMM1
+PSUBUSW XMM1, XMM5						;subtracting from that second bytes in second row, result in XMM1
+PSUBUSW XMM1, XMM5						;subtracting from that second bytes in second row again, result in XMM1
+PSUBUSW XMM1, XMM7						;subtracting from that first bytes in third row, result in XMM1
+PSUBUSW XMM1, XMM8						;subtracting from that second bytes in third row, result in XMM1
+PSUBUSW XMM1, XMM9						;subtracting from that third bytes in third row, result in XMM1
 ;====================================================================================================================================================================
-PMULLW XMM1, XMM10
-PSRAW XMM1, XMM11
-PACKUSWB XMM1, XMM0
-SUB RAX, W						;RAX = I * WIDTH + (J + 1) * 3 + CHANNEL_NR
-SUB RAX, 3						;RAX = I * WIDTH + J * 3 + CHANNEL_NR
-MOVQ QWORD PTR[R9 + RAX], XMM1	;OTPT_DATA_PTR[I * WIDTH + J * 3 + CHANNEL_NR] = R15B				
+PMULLW XMM1, XMM10						;multiplying packed words stored in XMM1 by 29
+PSRAW XMM1, XMM11						;shiffitng packed words stored in XMM1 by 8
+PACKUSWB XMM1, XMM0						;packing words into bytes
+SUB RAX, RCX							;changing address to previous row
+MOVQ QWORD PTR[R9 + RAX + 3], XMM1		;exporting 8 bytes of result				
 ;====================================================================================================================================================================
-SUB RAX, W						;RAX = (I - 1) * WIDTH + J * 3 + CHANNEL_NR
-ADD RAX, 5						;RAX = (I - 1) * WIDTH + (J - 1) * 3 + CHANNEL_NR_NEXT
-INC R11							;++J
-JMP BEG_LOOP_2					;jumping to begining of LOOP_2
-END_LOOP_2:						;ending LOOP_2
-MOV RBX, EN_J
-SHL RBX, 3
-SUB RAX, RBX
-ADD RAX, W
-ADD RAX, 8
-INC R10							;++I
-MOV R11, 1						;R11 = J = 1
-JMP BEG_LOOP_1					;jumping to begining of LOOP_1
+SUB RAX, RCX							;changing address to previous row
+ADD RAX, 8								;changing address to next 8 bytes
+INC R11									;++J
+JMP BEG_LOOP_2							;jumping to begining of LOOP_2
+END_LOOP_2:								;ending LOOP_2
+MOV RBX, R12							;RBX = (WIDTH - 1) / 8 = END_J
+SHL RBX, 3								;RBX = (WIDTH - 1)
+SUB RAX, RBX							;changing address to first column
+ADD RAX, RCX							;changing addressto next row
+INC R10									;++I
+MOV R11, 1								;R11 = J = 1
+JMP BEG_LOOP_1							;jumping to begining of LOOP_1
 ;====================================================================================================================================================================
-EXT:							;exiting procedure
-POP R15							;restore current R15 value
-POP R14							;restore current R14 value
-POP R13							;restore current R13 value
-POP R12							;restore current R12 value
-POP R11							;restore current R11 value
-POP R10							;restore current R10 value
-POP R9							;restore current R9	value
-POP R8							;restore current R8	value
-POP RSI							;restore current RSI value
-POP RDI							;restore current RDI value
-POP RBP							;restore current RBP value
-POP RDX							;restore current RDX value
-POP RCX							;restore current RCX value
-POP RBX							;restore current RBX value
-POP RAX							;restore current RAX value
+EXT:									;exiting procedure
+POP R15									;restore current R15 value
+POP R14									;restore current R14 value
+POP R13									;restore current R13 value
+POP R12									;restore current R12 value
+POP R11									;restore current R11 value
+POP R10									;restore current R10 value
+POP R9									;restore current R9	value
+POP R8									;restore current R8	value
+POP RSI									;restore current RSI value
+POP RDI									;restore current RDI value
+POP RBP									;restore current RBP value
+POP RDX									;restore current RDX value
+POP RCX									;restore current RCX value
+POP RBX									;restore current RBX value
+POP RAX									;restore current RAX value
 RET
 calculatePixelsWithVI ENDP
 

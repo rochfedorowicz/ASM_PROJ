@@ -1,9 +1,7 @@
 #pragma once
-#include <limits.h>
+#include <windows.h>
 
-#include "macros.h"
-
-
+// Struct imitating structure of BMP info file
 #pragma pack(2)
 struct BMPINFO {
     // BMP HEADER
@@ -22,14 +20,14 @@ struct BMPINFO {
     // Irrelevant rest of BMP file atributes and raw data
 };
 
+// Struct putting togehter BMP info and pointer to raw data
 struct BMP {
-    const char* fileName;
     BMPINFO bmpInfo;
     BYTE* copyOfBytes;
 };
 
-bool LoadBitmapFile(char* const, BMP&);
+// Function loading BMP file
+bool loadBitmapFile(char* const, BMP&);
 
-void ExportBitmapWithAppliedChanges(BMP&, char* const&);
-
-void printBMP(const BMP&, bool = false);
+// Function exportig BMP file after it was changed
+void exportBitmapWithAppliedChanges(BMP&, char* const&);
